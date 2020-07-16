@@ -1,7 +1,7 @@
 package requestdump
 
 import (
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type Option interface {
@@ -16,7 +16,7 @@ func (a optionApplyer) apply(opt *options) {
 
 type options struct {
 	enabled bool
-	logger  zap.Logger
+	logger  *zap.Logger
 	rootKey string
 }
 
@@ -33,7 +33,7 @@ func Disable() Option {
 	})
 }
 
-func Zap(logger zap.Logger) Option {
+func Zap(logger *zap.Logger) Option {
 	return optionApplyer(func(opt *options) {
 		opt.logger = logger
 	})

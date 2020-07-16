@@ -1,10 +1,10 @@
 package i18n
 
 import (
+	"context"
 	"testing"
 
 	"github.com/nicksnyder/go-i18n/i18n"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -30,7 +30,7 @@ func loadTranslation() {
 
 func newMetadataContext(ctx context.Context, val string) context.Context {
 	md := metadata.Pairs("accept-language", val)
-	return metadata.NewContext(ctx, md)
+	return metadata.NewIncomingContext(ctx, md)
 }
 
 func TestDefaultLanguage(t *testing.T) {

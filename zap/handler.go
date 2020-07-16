@@ -4,7 +4,7 @@ import (
 	multiint "github.com/higebu/go-grpc-interceptor/multiinterceptor"
 	"github.com/higebu/go-grpc-interceptor/xrequestid"
 	"github.com/higebu/go-grpc-interceptor/zap/zapctx"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -12,7 +12,7 @@ import (
 var DefaultMethodKey = "method"
 var DefaultRequestIDKey = "requestid"
 
-func UnaryServerInterceptor(logger zap.Logger) grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		l := logger.With(zap.String(DefaultMethodKey, info.FullMethod))
 		ctx = zapctx.NewContext(ctx, l)
@@ -20,7 +20,7 @@ func UnaryServerInterceptor(logger zap.Logger) grpc.UnaryServerInterceptor {
 	}
 }
 
-func StreamServerInterceptor(logger zap.Logger) grpc.StreamServerInterceptor {
+func StreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		l := logger.With(zap.String(DefaultMethodKey, info.FullMethod))
 		ctx := zapctx.NewContext(stream.Context(), l)
@@ -29,7 +29,7 @@ func StreamServerInterceptor(logger zap.Logger) grpc.StreamServerInterceptor {
 	}
 }
 
-func UnaryServerInterceptorWithRequestID(logger zap.Logger) grpc.UnaryServerInterceptor {
+func UnaryServerInterceptorWithRequestID(logger *zap.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		l := logger.With(
 			zap.String(DefaultMethodKey, info.FullMethod),
@@ -40,7 +40,7 @@ func UnaryServerInterceptorWithRequestID(logger zap.Logger) grpc.UnaryServerInte
 	}
 }
 
-func StreamServerInterceptorWithRequestID(logger zap.Logger) grpc.StreamServerInterceptor {
+func StreamServerInterceptorWithRequestID(logger *zap.Logger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		l := logger.With(
 			zap.String(DefaultMethodKey, info.FullMethod),

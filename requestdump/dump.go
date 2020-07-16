@@ -2,18 +2,18 @@ package requestdump
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"strings"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/uber-go/zap"
-	"golang.org/x/net/context"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/transport"
 )
 
 func init() {
@@ -40,7 +40,7 @@ func (m protoMessage) MarshalJSON() ([]byte, error) {
 
 type metadataMarshaller metadata.MD
 
-func (mm metadataMarshaller) MarshalLog(kv zap.KeyValue) error {
+func (mm metadataMarshaller) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for k, v := range mm {
 		// TODO: array handling
 		if len(v) == 0 {
@@ -49,31 +49,30 @@ func (mm metadataMarshaller) MarshalLog(kv zap.KeyValue) error {
 
 		value := v[0]
 		if strings.HasSuffix(k, "-bin") {
-			zap.Base64(k, []byte(value)).AddTo(kv)
+			enc.AddBinary(k, []byte(value))
 		} else {
-			kv.AddString(k, value)
+			enc.AddString(k, value)
 		}
 	}
 	return nil
 }
 
-func dump(ctx context.Context, opts options, logger zap.Logger, info *grpc.UnaryServerInfo, request bool, msg interface{}, err error) {
+func dump(ctx context.Context, opts options, logger *zap.Logger, info *grpc.UnaryServerInfo, request bool, msg interface{}, err error) {
 	direction := "request"
 	code := zap.Skip()
 	header := zap.Skip()
 	trailer := zap.Skip()
 	if request {
-		if md, ok := metadata.FromContext(ctx); ok {
-			header = zap.Marshaler("header", metadataMarshaller(md))
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			header = zap.Object("header", metadataMarshaller(md))
 		}
 	} else {
 		direction = "response"
 		code = zap.String("code", grpc.Code(err).String())
 
 		// NOTE: not sure this is public API, will be broken in futre
-		if stream, ok := transport.StreamFromContext(ctx); ok {
-			md := stream.Trailer()
-			trailer = zap.Marshaler("trailer", metadataMarshaller(md))
+		if md, ok := metadata.FromOutgoingContext(ctx); ok {
+			trailer = zap.Object("trailer", metadataMarshaller(md))
 		}
 
 		// NOTE: there is no API to get response header
@@ -99,10 +98,10 @@ func dump(ctx context.Context, opts options, logger zap.Logger, info *grpc.Unary
 
 	if err != nil {
 		logger.Info("request dump",
-			zap.Nest(opts.rootKey,
+			zap.Any(opts.rootKey,
 				append(fields,
 					zap.String("error", err.Error()),
-				)...,
+				),
 			),
 		)
 		return
@@ -111,20 +110,20 @@ func dump(ctx context.Context, opts options, logger zap.Logger, info *grpc.Unary
 	protoMsg, ok := msg.(proto.Message)
 	if !ok {
 		logger.Info("request dump",
-			zap.Nest(opts.rootKey,
+			zap.Any(opts.rootKey,
 				append(fields,
 					zap.String("error", fmt.Sprintf("not proto.Message: %v", msg)),
-				)...,
+				),
 			),
 		)
 		return
 	}
 
 	logger.Info("request dump",
-		zap.Nest(opts.rootKey,
+		zap.Any(opts.rootKey,
 			append(fields,
-				zap.Object("message", protoMessage{msg: protoMsg}),
-			)...,
+				zap.Any("message", protoMessage{msg: protoMsg}),
+			),
 		),
 	)
 	return

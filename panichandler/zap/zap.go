@@ -1,12 +1,12 @@
 package zap
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 
 	"github.com/higebu/go-grpc-interceptor/zap/zapctx"
-	"github.com/uber-go/zap"
-	"golang.org/x/net/context"
+	"go.uber.org/zap"
 )
 
 func LogPanicWithStackTrace(ctx context.Context, r interface{}) {
@@ -30,5 +30,5 @@ func zapStack() zap.Field {
 		fn := runtime.FuncForPC(pc)
 		callers = append(callers, fmt.Sprintf("%s(%d): %s", file, line, fn.Name()))
 	}
-	return zap.Object("stacktrace", callers)
+	return zap.Any("stacktrace", callers)
 }

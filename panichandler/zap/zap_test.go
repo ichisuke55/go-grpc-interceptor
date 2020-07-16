@@ -2,20 +2,33 @@ package zap
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/higebu/go-grpc-interceptor/panichandler"
 	"github.com/higebu/go-grpc-interceptor/zap/zapctx"
-	"github.com/uber-go/zap"
-	"golang.org/x/net/context"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
+func NewTestLogger(buf *bytes.Buffer, options ...zap.Option) *zap.Logger {
+	encoderCfg := zapcore.EncoderConfig{
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+	}
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), zapcore.AddSync(buf), zap.DebugLevel)
+	return zap.New(core).WithOptions(options...)
+}
+
 func TestUnaryServer(t *testing.T) {
 	buf := &bytes.Buffer{}
-	encoder := zap.NewJSONEncoder(zap.NoTime())
-	logger := zap.New(encoder, zap.DebugLevel, zap.Output(zap.AddSync(buf)), zap.ErrorOutput(zap.AddSync(buf)))
+	logger := NewTestLogger(buf)
 
 	unaryInfo := &grpc.UnaryServerInfo{
 		FullMethod: "TestService.UnaryMethod",
