@@ -31,15 +31,17 @@ When you send accept language via metadata, i18n interceptor parses it and set `
 
 ```golang
 import (
-	"github.com/nicksnyder/go-i18n/i18n"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	grpci18n "github.com/mercari/go-grpc-interceptor/acceptlang/i18n"
 	"golang.org/x/net/context"
 )
 
 func main() {
-	// load translation files
-	i18n.LoadTranslationFile("en-us.all.json")
-	i18n.LoadTranslationFile("ja-jp.all.json")
+	// load translation file
+	bundle := i18n.NewBundle(language.English)
+	bundle.MustLoadMessageFile("en.json")
+	bundle.MustLoadMessageFile("ja.json")
+	grpci18n.SetBundle(bundle)
 
 	// set default language in case of no accept language specified
 	// or no valid language found

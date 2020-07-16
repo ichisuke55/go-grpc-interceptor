@@ -1,13 +1,16 @@
 package i18n
 
 import (
+	"context"
+
 	"github.com/higebu/go-grpc-interceptor/acceptlang"
-	"github.com/nicksnyder/go-i18n/i18n"
-	"golang.org/x/net/context"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"google.golang.org/grpc"
 )
 
 var defaultLanguage = "en"
+
+var bundle *i18n.Bundle
 
 func SetDefaultLanguage(lang string) {
 	defaultLanguage = lang
@@ -15,27 +18,31 @@ func SetDefaultLanguage(lang string) {
 
 var _ grpc.UnaryServerInterceptor = UnaryServerInterceptor
 
-type tfuncKey struct{}
+type localizerKey struct{}
 
 func UnaryServerInterceptor(origctx context.Context, origreq interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return acceptlang.UnaryServerInterceptor(origctx, origreq, info, func(ctx context.Context, req interface{}) (interface{}, error) {
 		acceptLangs := acceptlang.FromContext(ctx)
-		tfunc := HandleI18n(acceptLangs)
-		ctx = context.WithValue(ctx, tfuncKey{}, tfunc)
+		l := HandleI18n(acceptLangs)
+		ctx = context.WithValue(ctx, localizerKey{}, l)
 		return handler(ctx, req)
 	})
 }
 
-func HandleI18n(acceptLangs acceptlang.AcceptLanguages) i18n.TranslateFunc {
+func HandleI18n(acceptLangs acceptlang.AcceptLanguages) *i18n.Localizer {
 	langs := acceptLangs.Languages()
 	langs = append(langs, defaultLanguage)
-	return i18n.MustTfunc(langs[0], langs[1:]...)
+	return i18n.NewLocalizer(bundle, langs...)
 }
 
-func MustTfunc(ctx context.Context) i18n.TranslateFunc {
-	tfunc, ok := ctx.Value(tfuncKey{}).(i18n.TranslateFunc)
+func MustLocalizer(ctx context.Context) *i18n.Localizer {
+	l, ok := ctx.Value(localizerKey{}).(*i18n.Localizer)
 	if !ok {
-		panic("could not find TranslateFunc from context")
+		panic("could not find Localizer from context")
 	}
-	return tfunc
+	return l
+}
+
+func SetBundle(b *i18n.Bundle) {
+	bundle = b
 }
