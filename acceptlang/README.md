@@ -54,8 +54,8 @@ func main() {
 
 func foo(ctx context.Context) {
 	// get TranslateFunc from context
-	T := grpci18n.MustTFunc(ctx)
-	fmt.printf("%s", T("hello"))
+	localizer := grpci18n.MustLocalizer(ctx)
+	fmt.printf("%s", localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "hello"}))
 }
 ```
 
