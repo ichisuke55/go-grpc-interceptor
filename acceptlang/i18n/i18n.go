@@ -16,11 +16,11 @@ func SetDefaultLanguage(lang string) {
 	defaultLanguage = lang
 }
 
-var _ grpc.UnaryServerInterceptor = UnaryServerInterceptor
+// var _ grpc.UnaryServerInterceptor = UnaryServerInterceptor
 
 type localizerKey struct{}
 
-func UnaryServerInterceptor(origctx context.Context, origreq interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func UnaryServerInterceptor(origctx context.Context, origreq interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) grpc.UnaryServerInterceptor {
 	return acceptlang.UnaryServerInterceptor(origctx, origreq, info, func(ctx context.Context, req interface{}) (interface{}, error) {
 		acceptLangs := acceptlang.FromContext(ctx)
 		l := HandleI18n(acceptLangs)
